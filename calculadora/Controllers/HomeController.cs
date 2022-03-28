@@ -19,28 +19,41 @@ namespace Calculadora.Controllers
             _logger = logger;
         }
 
-
-        [HttpGet]  // este anotador é facultativo
+        /// <summary>
+        /// preparar a view com a calculadora, durante a primeira iteração
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet] // esta anotação não seria necessária,
+                  // pq por predefinição os pedidos HTTP são GET
         public IActionResult Index()
         {
 
-            // preparar os dados a serem enviados para a View na primeira interação
+            // inicializar os dados para a calculadora funcionar
             ViewBag.Visor = "0";
 
             return View();
         }
 
-
-        [HttpPost] // só qd o formulário for submetido em 'post' ele será acionado
+        /// <summary>
+        /// processa a interação com a calculadora
+        /// </summary>
+        /// <param name="botao">valor do botão selecionado pelo utilizador</param>
+        /// <param name="visor">valor existente no Visor da claculadora</param>
+        /// <param name="primeiroOperando">valor a ser utilizado na operação algébrica</param>
+        /// <param name="operador">operador a ser utilizado na operação</param>
+        /// <param name="limpaEcra">'flag' a indicar se se deve, ou não, limpar o ecrã</param>
+        /// <returns></returns>
+        [HttpPost]
         public IActionResult Index(
            string botao,
            string visor,
            string primeiroOperando,
-           string operador
+           string operador,
+           string limpaEcra
            )
         {
 
-            // testar valor do 'botao'
+            // vamos decidir o q fazer com o valor do 'botao'
             switch (botao)
             {
                 case "1":
@@ -53,43 +66,75 @@ namespace Calculadora.Controllers
                 case "8":
                 case "9":
                 case "0":
-                    // pressionei um algarismo
-                    if (visor == "0") { visor = botao; }
+                    // o utilizador pressionou um algarismo
+                    if (limpaEcra == "sim" || visor == "0") { visor = botao; }
                     else { visor = visor + botao; }
-                    // desafio: fazer em modo algébrico esta operação...
+                    limpaEcra = "nao";
                     break;
 
                 case ",":
-                    // foi pressionado ','
-                    if (!visor.Contains(',')) visor += ',';
+                    // foi pressionada a ','
+                    if (!visor.Contains(',')) visor += botao;
+
                     break;
 
                 case "+/-":
-                    // vamos inverter o valor do 'visor'
+                    // vamos 'inverter' o valor do visor
+                    // pode ser através de uma expressão algébrica
+                    // ou, por manipulação de strings
                     if (visor.StartsWith('-')) visor = visor.Substring(1);
-                    else visor = '-' + visor;
-                    // sugestao: fazer de forma algebrica
+                    else visor = "-" + visor;
+
                     break;
 
                 case "+":
                 case "-":
                 case "x":
                 case ":":
-                    // foi pressionado um operador
+                    // foi pressionado um 'operador'
+
+                    if (!string.IsNullOrEmpty(operador))
+                    {
+                        // NÃO é a primeira vez q se executa o código
+
+                        // vamos executar a operação
+                        double operandoUm = Convert.ToDouble(primeiroOperando);
+                        double operandoDois = Convert.ToDouble(visor.Replace(',', '.'));
+
+                        switch (operador)
+                        {
+                            case "+":
+                                visor = operandoUm + operandoDois + "";
+                                break;
+                            case "-":
+                                visor = operandoUm - operandoDois + "";
+                                break;
+                            case "x":
+                                visor = operandoUm * operandoDois + "";
+                                break;
+                            case ":":
+                                visor = operandoUm / operandoDois + "";
+                                break;
+                        }
+                    }
                     primeiroOperando = visor;
                     operador = botao;
-
+                    limpaEcra = "sim";
                     break;
+
 
             }
 
-            // preparar dados para serem enviados à View
+            // preparar os dados a serem enviados para a View
             ViewBag.Visor = visor;
             ViewBag.PrimeiroOperando = primeiroOperando;
             ViewBag.Operador = operador;
+            ViewBag.LimpaEcra = limpaEcra;
 
             return View();
         }
+
+
 
         public IActionResult Privacy()
         {
